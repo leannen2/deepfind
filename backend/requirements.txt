@@ -1,0 +1,6 @@
+Flask
+flask-cors
+google-generativeai
+scikit-learn
+beautifulsoup4
+PyMuPDF
