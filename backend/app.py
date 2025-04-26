@@ -35,7 +35,7 @@ def find():
             return jsonify({'error': 'Text extraction failed'}), 500
 
         # Now perform semantic search
-        result = semantic_find_html(text, query)
+        result = semantic_find_html(text, content, query)
         related_terms = result["related_terms"]
         spelling_fix_terms = result["spelling_fix_terms"]
         relevant_images = result["relevant_images"]
