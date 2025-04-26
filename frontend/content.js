@@ -50,7 +50,7 @@ function markAllTerms(terms) {
 async function getListOfSemanticMatches(contentType, query) {
   try {
     const html_content = document.documentElement.outerHTML;
-    const res = await fetch("http://localhost:5002/api/find", {
+    const res = await fetch("http://localhost:5001/api/find", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
