@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.container{
+    min-width: 15rem;
+    min-height: 15rem;
+    max-width: 25rem;
+    max-height: 15rem;
+    @apply p-4 text-center
+}
