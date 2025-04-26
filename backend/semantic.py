@@ -11,9 +11,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configure Gemini
-genai.configure(api_key="")
-# model = genai.GenerativeModel("gemini-2.5-flash-preview-04-17")
-model = genai.GenerativeModel("gemini-2.5-pro-exp-03-25")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel("gemini-2.5-flash-preview-04-17")
+# model = genai.GenerativeModel("gemini-2.5-pro-exp-03-25")
 
 def upload_file(file_path):
     # Determine content type based on file extension
