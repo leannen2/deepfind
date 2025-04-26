@@ -7,7 +7,12 @@
     "default_popup": "js/index.html",
     "default_title": "Clicker Chrome Extension"
   },
-  "permissions": ["webNavigation", "activeTab", "scripting"],
+  "permissions": ["webNavigation", "activeTab", "scripting","identity"],
+  
+  "oauth2": {
+    "client_id": "609925858237-b4fbejuqlahtka5l7lja943golsi5h61.apps.googleusercontent.com",
+    "scopes": ["email", "profile"]
+  },
 
   "background": {
     "service_worker": "background.js"
