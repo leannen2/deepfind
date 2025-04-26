@@ -1,3 +1,6 @@
+// content.js
+console.log("Content script loaded");
+
 const instance = new Mark(document.body);
 
 var results = [];
@@ -42,10 +45,20 @@ function markAllTerms(terms) {
   });
 }
 
+
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   if (message.action === "markPage") {
     markAllTerms(message.markList);
     console.log("message received");
+    
+    fetch("http://127.0.0.1:5001/api/dummy")
+    .then((res) => res.json())
+    .then((data) => {
+      console.log("API response from content.js:", data);
+    })
+    .catch((err) => {
+      console.error("API error in content.js:", err);
+    });
     sendResponse({ status: "ok" });
     return true;
   } else if (message.action === "jumpForward") {
