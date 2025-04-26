@@ -1,6 +1,1 @@
-Flask
-flask-cors
-google-generativeai
-scikit-learn
-beautifulsoup4
-PyMuPDF
+wheel==0.45.1
