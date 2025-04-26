@@ -1,103 +1,153 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+import requests
+from flask import request, jsonify
 import google.generativeai as genai
-from sklearn.metrics.pairwise import cosine_similarity
 from bs4 import BeautifulSoup
 import fitz  # PyMuPDF
-import numpy as np
 import os
-import base64
 import re
+import base64
+from dotenv import load_dotenv
 
-app = Flask(__name__)
-CORS(app)
+load_dotenv()
 
-# Load Gemini API
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = genai.GenerativeModel("models/embedding-001")
+# Configure Gemini
+genai.configure(api_key="AIzaSyB7qBez2qP9KVbWUo7mOZaYmlDQ09hDPu0")
+# model = genai.GenerativeModel("gemini-2.5-flash-preview-04-17")
+model = genai.GenerativeModel("gemini-2.5-pro-exp-03-25")
+
+def upload_file(file_path):
+    # Determine content type based on file extension
+    _, ext = os.path.splitext(file_path)
+    ext = ext.lower()
+
+    if ext == '.html' or ext == '.htm':
+        content_type = 'html'
+    elif ext == '.pdf':
+        content_type = 'pdf'
+    else:
+        raise ValueError("Unsupported file type")
+
+    # Read content
+    with open(file_path, 'rb') as f:
+        raw_bytes = f.read()
+
+    if content_type == 'html':
+        content = raw_bytes.decode('utf-8', errors='ignore')
+        text = extract_text_from_html(content)
+    elif content_type == 'pdf':
+        content = base64.b64encode(raw_bytes).decode('utf-8')
+        pdf_bytes = base64.b64decode(content)
+        text = extract_text_from_pdf(pdf_bytes)
+
+    return text
+
+# @app.route('/upload', methods=['POST'])
+def handle_upload():
+    data = request.json
+    content = data['content']
+    content_type = data['contentType']
+
+    if content_type == 'html':
+        text = extract_text_from_html(content)
+    elif content_type == 'pdf':
+        pdf_bytes = base64.b64decode(content)
+        text = extract_text_from_pdf(pdf_bytes)
+    else:
+        return jsonify({f"error": "Unsupported content type: {content_type}. Needs to be HTML or PDF."}), 400
 
 def extract_text_from_html(html_content):
+    """Extract text from HTML using BeautifulSoup"""
     soup = BeautifulSoup(html_content, 'html.parser')
     return soup.get_text(separator=' ', strip=True)
 
-def extract_text_from_pdf(base64_pdf):
-    pdf_bytes = base64.b64decode(base64_pdf)
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+def extract_text_from_pdf(pdf_bytes):
+    """Extract text from PDF bytes using PyMuPDF"""
     text = ""
-    for page in doc:
-        text += page.get_text()
-    return text
+    try:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        for page in doc:
+            text += page.get_text()
+        return text
+    except Exception as e:
+        print(f"Error reading PDF: {e}")
+        return ""
 
 def preprocess_text(text):
+    """Clean and truncate text for Gemini"""
     text = re.sub(r'\s+', ' ', text).strip()
-    sentences = re.split(r'(?<=[.!?])\s+', text)
-    chunks = []
-    current_chunk = ""
-    for sentence in sentences:
-        if len(current_chunk) + len(sentence) < 500:
-            current_chunk += " " + sentence if current_chunk else sentence
-        else:
-            chunks.append(current_chunk.strip())
-            current_chunk = sentence
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-    return chunks
+    return text[:10000]  # Truncate to fit token limits
 
-def embed_text(texts):
-    response = model.embed_content(
-        contents=texts,
-        task_type="RETRIEVAL_QUERY",  # or "RETRIEVAL_DOCUMENT" depending on your case
-        title="User Query"
-    )
-    embeddings = [e.embedding for e in response.embeddings]
-    return np.array(embeddings)
+def generate_fixed_spelling(text, query):
+    """Generate fixed spelling using Gemini"""
+    prompt = f"""
+    Given this content: {text}
+    Check if the query has been misspelled and ONLY return the corrected spelling.
+    If there are several possible corrections (like "color" vs "colour" or "twenty one" vs "21" vs "twenty-one"), return all possible corrections.
+    Also return capitalization variations (like "Los Angeles" vs "los angeles" or "Los Angeles" vs "LOS ANGELES").
+    Generate this for the query: "{query}". Return ONLY carrot (^) separated terms.
+    """
+    response = model.generate_content(prompt)
+    if response is None:
+        return []
+    return [term.strip() for term in response.text.split('^') if term.strip()]
 
-@app.route("/search", methods=["POST"])
-def search():
-    data = request.json
-    query = data.get("query", "")
-    content = data.get("content", "")
-    content_type = data.get("contentType", "html")
+def generate_similar_terms(text, query):
+    """Generate search terms using Gemini"""
+    prompt = f"""
+    Given this content: {text} and this query: {query}
+    Generate 5-10 search terms that are directly relevant to the query (synonyms and very related concepts), based on the context of the text.
+    Make sure the search terms exactly exist in the context text.
+    Do not include any terms that are not directly relevant to the query.
+    Do not include spelling variations or corrections.
+    Return ONLY carrot (^) separated terms.
+    """
+    response = model.generate_content(prompt)
+    if response is None:
+        return []
+    return [term.strip() for term in response.text.split('^') if term.strip()]
 
-    if not query or not content:
-        return jsonify({"error": "Query and content are required"}), 400
+def semantic_find(file_path, query): 
+    # Extract text
+    raw_text = upload_file(file_path)
+    
+    if not raw_text:
+        print("Failed to extract text")
+        exit()
+    
+    # Preprocess and generate terms
+    clean_text = preprocess_text(raw_text)
+    # print(f"nCleaned text (truncated):\n{clean_text[:500]}...")
+    # print(f"length of preprocessed text {len(clean_text)}")  # Show only the first 500 characters
+    spelling_fix_terms = generate_fixed_spelling(clean_text, query)
+    related_terms = generate_similar_terms(clean_text, query)
 
-    try:
-        if content_type == "html":
-            full_text = extract_text_from_html(content)
-        elif content_type == "pdf":
-            full_text = extract_text_from_pdf(content)
-        else:
-            return jsonify({"error": "Unsupported content type"}), 400
+    return related_terms
 
-        chunks = preprocess_text(full_text)
-        if not chunks:
-            return jsonify({"results": []}), 200
+def semantic_find_html(raw_text, query): 
+    # Extract text
+    # raw_text = upload_file(file_path)
+    
+    if not raw_text:
+        print("Failed to extract text")
+        exit()
+    
+    # Preprocess and generate terms
+    clean_text = preprocess_text(raw_text)
+    # print(f"nCleaned text (truncated):\n{clean_text[:500]}...")
+    # print(f"length of preprocessed text {len(clean_text)}")  # Show only the first 500 characters
+    spelling_fix_terms = generate_fixed_spelling(clean_text, query)
+    related_terms = generate_similar_terms(clean_text, query)
 
-        chunk_embeddings = embed_text(chunks)
-        query_embedding = embed_text([query])[0]
+    return related_terms
 
-        similarities = cosine_similarity([query_embedding], chunk_embeddings)[0]
-
-        results = []
-        for i, (chunk, score) in enumerate(zip(chunks, similarities)):
-            if score > 0.5:
-                results.append({
-                    "text": chunk,
-                    "score": float(score),
-                    "index": i
-                })
-
-        results = sorted(results, key=lambda x: x["score"], reverse=True)
-        return jsonify({"results": results[:10]}), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/health", methods=["GET"])
-def health():
-    return jsonify({"status": "ok"}), 200
+### DEBUG 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    print("\nGenerated fixed-spelling terms:")
+    related_terms = semantic_find("ww2.html", "axis powers")
+    # if spelling_fix_terms:
+    #     for i, term in enumerate(spelling_fix_terms, 1):
+    #         print(f"{i}. {term}")
+    print("\nGenerated similar terms:")
+    for i, term in enumerate(related_terms, 1):
+        print(f"{i}. {term}")
