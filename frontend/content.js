@@ -27,6 +27,7 @@ function jumpTo() {
 function markTerm(term) {
   return new Promise((resolve) => {
     instance.mark(term, {
+      separateWordSearch: false,
       done: resolve,
     });
   });
@@ -49,10 +50,10 @@ function markAllTerms(terms) {
 async function getListOfSemanticMatches(contentType, query) {
   try {
     const html_content = document.documentElement.outerHTML;
-    const res = await fetch('http://localhost:5002/api/find', {
-      method: 'POST',
+    const res = await fetch("http://localhost:5002/api/find", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         content: html_content,
@@ -61,19 +62,18 @@ async function getListOfSemanticMatches(contentType, query) {
       }),
     });
     const response = await res.json();
-    console.log("similar_terms", response.similar_terms)
-    return response.similar_terms; 
+    console.log("similar_terms", response.similar_terms);
+    return response.similar_terms;
   } catch (error) {
-    console.error('Failed to get list of semantic matches:', error);
+    console.error("Failed to get list of semantic matches:", error);
   }
 }
 
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   if (message.action === "markPage") {
-    
     console.log("message received");
-    
-    getListOfSemanticMatches('html', message.query)
+
+    getListOfSemanticMatches("html", message.query)
       .then((markList) => {
         if (markList && Array.isArray(markList)) {
           markAllTerms(markList);
@@ -98,6 +98,3 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     return true;
   }
 });
-
-
-
