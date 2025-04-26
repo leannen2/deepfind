@@ -1,10 +1,29 @@
 {
-    "version": "1.0.0",
-    "manifest_version": 3,
-    "name": "Clicker Chrome Extension",
-    "description": "This is a Chrome extension built with React & Tailwind By ...",
-    "action": {
-        "default_popup": "js/index.html",
-        "default_title": "Clicker Chrome Extension"
+  "version": "1.0.0",
+  "manifest_version": 3,
+  "name": "Clicker Chrome Extension",
+  "description": "This is a Chrome extension built with React & Tailwind By ...",
+  "action": {
+    "default_popup": "js/index.html",
+    "default_title": "Clicker Chrome Extension"
+  },
+  "permissions": ["webNavigation", "activeTab", "scripting"],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["mark.min.js", "content.js"]
     }
+  ],
+
+  "content_security_policy": {
+    "script-src": "'self' 'wasm-unsafe-eval'",
+    "object-src": "'self'"
+  },
+
+  "host_permissions": ["<all_urls>"]
 }
