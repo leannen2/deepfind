@@ -62,7 +62,7 @@ async function getListOfSemanticMatches(contentType, query) {
       }),
     });
     const response = await res.json();
-    console.log("similar_terms", response.similar_terms);
+    console.log("whole thing", response);
     return response.similar_terms;
   } catch (error) {
     console.error("Failed to get list of semantic matches:", error);
