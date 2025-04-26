@@ -11,7 +11,7 @@
   "permissions": ["webNavigation", "activeTab", "scripting","identity",  "tabs"],
   
   "oauth2": {
-    "client_id": "609925858237-b4fbejuqlahtka5l7lja943golsi5h61.apps.googleusercontent.com",
+    "client_id": "YOUR_CLIENT_ID.apps.googleusercontent.com",
     "scopes": ["email", "profile"]
   },
 
