@@ -7,6 +7,24 @@ export default function Home() {
   const [includeImages, setIncludeImages] = useState(false);
   const [includeVideos, setIncludeVideos] = useState(false);
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      console.log("Enter pressed:", search);
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        console.log("arrow clicked");
+        if (tabs[0]?.id) {
+          chrome.tabs.sendMessage(
+            tabs[0].id,
+            { action: "markPage", markList: ["hello", "world", "program"] },
+            (response) => {
+              console.log("Content script responded:", response);
+            }
+          );
+        }
+      });
+    }
+  };
+
   return (
     <div className="w-[350px] border rounded-xl shadow-md p-4 bg-white">
       <div className="mb-4">
@@ -27,6 +45,7 @@ export default function Home() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onKeyDown={handleKeyDown}
               />
             </div>
           </div>

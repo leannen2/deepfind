@@ -18,7 +18,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "webpack --config webpack.config.js",
+    "build": "webpack --config webpack.config.js && cp content.js dist/content.js && cp background.js dist/background.js && cp mark.min.js dist/mark.min.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
