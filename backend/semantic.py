@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configure Gemini
-genai.configure(api_key="AIzaSyB7qBez2qP9KVbWUo7mOZaYmlDQ09hDPu0")
+genai.configure(api_key="")
 # model = genai.GenerativeModel("gemini-2.5-flash-preview-04-17")
 model = genai.GenerativeModel("gemini-2.5-pro-exp-03-25")
 
