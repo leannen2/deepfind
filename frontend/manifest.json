@@ -1,12 +1,12 @@
 {
-  "name": "ctrlpp",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "manifest_version": 3,
-
+  "name": "Clicker Chrome Extension",
+  "description": "This is a Chrome extension built with React & Tailwind By ...",
   "action": {
-    "default_popup": "index.html"
+    "default_popup": "js/index.html",
+    "default_title": "Clicker Chrome Extension"
   },
-
   "permissions": ["webNavigation", "activeTab", "scripting"],
 
   "background": {
