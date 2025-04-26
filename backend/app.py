@@ -35,11 +35,16 @@ def find():
             return jsonify({'error': 'Text extraction failed'}), 500
 
         # Now perform semantic search
-        related_terms = semantic_find_html(text, query)
+        result = semantic_find_html(text, query)
+        related_terms = result["related_terms"]
+        spelling_fix_terms = result["spelling_fix_terms"]
+        relevant_images = result["relevant_images"]
 
         return jsonify({
             'message': 'Search terms generated successfully',
             'similar_terms': related_terms,
+            'spelling_fix_terms': spelling_fix_terms,
+            'relevant_images': relevant_images,
             'status': 'success'
         })
 
