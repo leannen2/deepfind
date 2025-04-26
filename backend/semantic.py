@@ -123,7 +123,38 @@ def semantic_find(file_path, query):
 
     return related_terms
 
-def semantic_find_html(raw_text, query): 
+def find_relevant_Images(raw_text, related_terms):
+    soup = BeautifulSoup(raw_text, 'html.parser')
+    images = soup.find_all('img')
+    relevant_images = []
+
+    for img in images:
+        alt_text = img.get('alt', '').lower()
+        title_text = img.get('title', '').lower()
+        src = img.get('src', '').lower()
+        
+    # Check nearby text (e.g., parent or sibling tags)
+        surrounding_text = ''
+        parent = img.find_parent()
+        if parent:
+            surrounding_text = parent.get_text(separator=' ', strip=True).lower()
+
+        # Combine everything to one string to match against
+        combined_text = f"{alt_text} {title_text} {src} {surrounding_text}"
+
+        for term in related_terms:
+            if term.lower() in combined_text:
+                relevant_images.append({
+                    'src': src,
+                    'alt': alt_text,
+                    'title': title_text,
+                    'matched_term': term
+                })
+                break  # Once matched, no need to check other terms for this image
+
+    return relevant_images
+
+def semantic_find_html(raw_text, orig_raw, query): 
     # Extract text
     # raw_text = upload_file(file_path)
     
@@ -138,16 +169,45 @@ def semantic_find_html(raw_text, query):
     spelling_fix_terms = generate_fixed_spelling(clean_text, query)
     related_terms = generate_similar_terms(clean_text, query)
 
-    return related_terms
+    relevant_images = find_relevant_Images(orig_raw, related_terms)
+
+    return {
+        "related_terms": related_terms,
+        "spelling_fix_terms": spelling_fix_terms,
+        "relevant_images": relevant_images
+    }
 
 ### DEBUG 
 
 if __name__ == "__main__":
-    print("\nGenerated fixed-spelling terms:")
+    print("\nGenerating")
     related_terms = semantic_find("ww2.html", "axis powers")
+    raw_text = upload_file("ww2.html")
+    with open('ww2.html', 'r', encoding='utf-8') as f:
+        html_content_orig = f.read()
+    query = "axis powers"
+    images = find_relevant_Images(html_content_orig, related_terms)
+    results = semantic_find_html(raw_text, html_content_orig, query)
+    
     # if spelling_fix_terms:
     #     for i, term in enumerate(spelling_fix_terms, 1):
     #         print(f"{i}. {term}")
-    print("\nGenerated similar terms:")
-    for i, term in enumerate(related_terms, 1):
-        print(f"{i}. {term}")
+    # print("\nGenerated similar terms:")
+    # for i, term in enumerate(related_terms, 1):
+    #     print(f"{i}. {term}")
+    if results:
+        print("\n=== Related Terms ===")
+        for term in results["related_terms"]:
+            print(f"- {term}")
+
+        print("\n=== Spelling Fix Terms ===")
+        for term in results["spelling_fix_terms"]:
+            print(f"- {term}")
+
+        print("\n=== Relevant Images ===")
+        for img_info in results["relevant_images"]:
+            print(f"Matched Term: {img_info['matched_term']}")
+            print(f"Src: {img_info['src']}")
+            print(f"Alt: {img_info['alt']}")
+            print(f"Title: {img_info['title']}")
+            print("-" * 40)
