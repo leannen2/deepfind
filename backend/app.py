@@ -65,7 +65,7 @@ def google_auth():
 @app.route('/user/add_link', methods=['POST'])
 def add_link():
     data = request.json
-    user_id = data.get('userId')  # this should be Google ID
+    user_id = data.get('userId')  # Google ID
     topic = data.get('topic')
     link = data.get('link')  # dict with title, url
 
@@ -75,6 +75,15 @@ def add_link():
     if not isinstance(link, dict) or not all(k in link for k in ['title', 'url']):
         return jsonify({"error": "Link must contain 'title' and 'url'"}), 400
 
+    # Check if user exists and topic contains the same link (by URL)
+    user = users_collection.find_one({ "_id": user_id })
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    existing_links = user.get("topics", {}).get(topic, [])
+    if any(existing['url'] == link['url'] for existing in existing_links):
+        return jsonify({ "status": "duplicate", "message": "Link already exists under this topic." })
+
     link['date_added'] = datetime.utcnow().isoformat()
 
     result = users_collection.update_one(
@@ -82,10 +91,30 @@ def add_link():
         { "$push": { f"topics.{topic}": link } }
     )
 
+    return jsonify({ "status": "success" })
+
+@app.route('/user/delete_link', methods=['POST'])
+def delete_link():
+    data = request.json
+    user_id = data.get('userId')  # Google ID
+    topic = data.get('topic')
+    url = data.get('url')  # We delete by URL
+
+    if not all([user_id, topic, url]):
+        return jsonify({"error": "Missing userId, topic, or url"}), 400
+
+    result = users_collection.update_one(
+        { "_id": user_id },
+        { "$pull": { f"topics.{topic}": { "url": url } } }
+    )
+
     if result.matched_count == 0:
         return jsonify({"error": "User not found"}), 404
 
-    return jsonify({ "status": "success" })
+    if result.modified_count == 0:
+        return jsonify({"status": "not_found", "message": "Link not found in topic."})
+
+    return jsonify({"status": "success", "message": "Link deleted."})
 
 
 @app.route('/api/dummy', methods=['GET'])
