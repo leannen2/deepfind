@@ -25,6 +25,36 @@ export default function Home() {
     }
   };
 
+  const handleJumpForward = () => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      console.log("jump forward");
+      if (tabs[0]?.id) {
+        chrome.tabs.sendMessage(
+          tabs[0].id,
+          { action: "jumpForward" },
+          (response) => {
+            console.log("Content script responded:", response);
+          }
+        );
+      }
+    });
+  };
+
+  const handleJumpBackward = () => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      console.log("jump backward");
+      if (tabs[0]?.id) {
+        chrome.tabs.sendMessage(
+          tabs[0].id,
+          { action: "jumpBackward" },
+          (response) => {
+            console.log("Content script responded:", response);
+          }
+        );
+      }
+    });
+  };
+
   return (
     <div className="w-[350px] border rounded-xl shadow-md p-4 bg-white">
       <div className="mb-4">
@@ -85,12 +115,14 @@ export default function Home() {
           <button
             type="button"
             className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+            onClick={() => handleJumpBackward()}
           >
             {"<"}
           </button>
           <button
             type="button"
             className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+            onClick={() => handleJumpForward()}
           >
             {">"}
           </button>
