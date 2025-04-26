@@ -7,7 +7,7 @@
     "default_popup": "js/index.html",
     "default_title": "Clicker Chrome Extension"
   },
-  "permissions": ["webNavigation", "activeTab", "scripting"],
+  "permissions": ["webNavigation", "activeTab", "scripting", "tabs"],
 
   "background": {
     "service_worker": "background.js"

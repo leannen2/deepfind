@@ -15,7 +15,7 @@ export default function Home() {
         if (tabs[0]?.id) {
           chrome.tabs.sendMessage(
             tabs[0].id,
-            { action: "markPage", markList: ["hello", "world", "program"] },
+            { action: "markPage", query: search },
             (response) => {
               console.log("Content script responded:", response);
             }
