@@ -55,6 +55,10 @@ export default function Home() {
     });
   };
 
+  const openStorage = () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("storage.html") });
+  };
+
   return (
     <div className="w-[350px] border rounded-xl shadow-md p-4 bg-white">
       <div className="mb-4">
@@ -128,6 +132,13 @@ export default function Home() {
           </button>
         </div>
       </div>
+      <button
+        type="button"
+        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+        onClick={() => openStorage()}
+      >
+        OPEN STORAGE
+      </button>
     </div>
   );
 }
