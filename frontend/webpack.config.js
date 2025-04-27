@@ -33,7 +33,7 @@ module.exports = {
       filename: "[name].css",
     }),
     new CopyPlugin({
-      patterns: [{ from: "manifest.json", to: "../manifest.json" }],
+      patterns: [{ from: "manifest.json", to: "manifest.json" }],
     }),
     ...getHtmlPlugins(["index", "storage"]),
   ],

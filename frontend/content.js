@@ -4,6 +4,7 @@ console.log("Content script loaded");
 const instance = new Mark(document.body);
 
 var results = [];
+var markedImageElements = [];
 var currentClass = "current";
 // top offset for the jump (the search bar)
 var offsetTop = 50;
@@ -46,6 +47,36 @@ function markAllTerms(terms) {
   });
 }
 
+function markImages(imageSources) {
+  var images = document.querySelectorAll("img");
+
+  images.forEach((img) => {
+    var imgSrc = img.getAttribute("src");
+    if (imageSources.includes(imgSrc)) {
+      markedImageElements.push(img);
+      img.style.border = "3px solid red";
+      img.style.boxShadow = "0 0 10px 5px yellow";
+      img.style.borderRadius = "5px";
+    } else {
+      img.style.border = "";
+      img.style.boxShadow = "";
+      img.style.borderRadius = "";
+    }
+  });
+
+  console.log("markedImageElements", markedImageElements);
+}
+
+function unmarkAllImages() {
+  var images = document.querySelectorAll("img");
+
+  images.forEach((img) => {
+    img.style.border = "";
+    img.style.boxShadow = "";
+    img.style.borderRadius = "";
+  });
+}
+
 // Send HTML/PDF content and query to backend
 async function getListOfSemanticMatches(contentType, query) {
   try {
@@ -63,7 +94,7 @@ async function getListOfSemanticMatches(contentType, query) {
     });
     const response = await res.json();
     console.log("whole thing", response);
-    return response.similar_terms;
+    return response;
   } catch (error) {
     console.error("Failed to get list of semantic matches:", error);
   }
@@ -72,13 +103,18 @@ async function getListOfSemanticMatches(contentType, query) {
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   if (message.action === "markPage") {
     console.log("message received");
-
+    results = [];
     getListOfSemanticMatches("html", message.query)
-      .then((markList) => {
-        if (markList && Array.isArray(markList)) {
-          markAllTerms(markList);
+      .then((res) => {
+        if (res.similar_terms && Array.isArray(res.similar_terms)) {
+          markAllTerms(res.similar_terms);
         } else {
           console.warn("No terms received to mark.");
+        }
+        if (res.relevant_images && Array.isArray(res.relevant_images)) {
+          markImages(res.relevant_images.map((relImage) => relImage.src));
+        } else {
+          console.log("no images highlighted");
         }
       })
       .catch((err) => {

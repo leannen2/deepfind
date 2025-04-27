@@ -1,1 +1,8 @@
-wheel==0.45.1
+Flask
+flask-cors
+requests
+google-generativeai
+beautifulsoup4
+PyMuPDF
+python-dotenv
+groq

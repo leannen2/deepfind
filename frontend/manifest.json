@@ -4,7 +4,7 @@
   "name": "Ctrl++",
   "description": "This is a Chrome extension built with React & Tailwind By ...",
   "action": {
-    "default_popup": "js/index.html",
+    "default_popup": "index.html",
     "default_title": "Ctrl++"
   },
   "permissions": ["webNavigation", "activeTab", "scripting", "tabs"],
