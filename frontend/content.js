@@ -106,8 +106,8 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     results = [];
     getListOfSemanticMatches("html", message.query)
       .then((res) => {
-        if (res.similar_terms && Array.isArray(res.similar_terms)) {
-          markAllTerms(res.similar_terms);
+        if (res.search_terms && Array.isArray(res.search_terms)) {
+          markAllTerms(res.search_terms);
         } else {
           console.warn("No terms received to mark.");
         }
