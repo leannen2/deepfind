@@ -132,6 +132,86 @@ def add_topic():
         "status": "success",
         "message": f"Topic '{topic}' added successfully."
     })
+
+@app.route('/user/add_text_chunk', methods=['POST'])
+def add_text_chunk():
+    data = request.json
+    user_id = data.get('userId')
+    topic = data.get('topic')
+    link_url = data.get('linkUrl')  # target link
+    text_chunk = data.get('textChunk')
+
+    if not all([user_id, topic, link_url, text_chunk]):
+        return jsonify({"error": "Missing userId, topic, linkUrl, or textChunk"}), 400
+
+    # Check if user exists
+    user = users_collection.find_one({ "_id": user_id })
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Check if topic exists
+    links = user.get("topics", {}).get(topic)
+    if links is None:
+        return jsonify({"error": "Topic does not exist"}), 400
+
+    # Find the index of the link to update
+    link_index = next((i for i, link in enumerate(links) if link.get("url") == link_url), None)
+    if link_index is None:
+        return jsonify({"error": "Link not found in topic"}), 404
+
+    # Use the positional operator to push to textChunks of the matching link
+    result = users_collection.update_one(
+        {
+            "_id": user_id,
+            f"topics.{topic}.{link_index}.url": link_url
+        },
+        {
+            "$push": { f"topics.{topic}.{link_index}.textChunks": text_chunk }
+        }
+    )
+
+    if result.modified_count == 0:
+        return jsonify({"error": "Failed to add text chunk"}), 500
+
+    return jsonify({
+        "status": "success",
+        "message": f"Text chunk added to link '{link_url}' in topic '{topic}' successfully."
+    })
+
+
+@app.route('/user/delete_text_chunk', methods=['POST'])
+def delete_text_chunk():
+    data = request.json
+    user_id = data.get('userId')
+    topic = data.get('topic')
+    text_chunk = data.get('textChunk')
+
+    if not all([user_id, topic, text_chunk]):
+        return jsonify({"error": "Missing userId, topic, or textChunk"}), 400
+
+    # Check if user exists
+    user = users_collection.find_one({ "_id": user_id })
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Check if topic exists
+    if topic not in user.get("topics", {}):
+        return jsonify({"error": "Topic does not exist"}), 400
+
+    # Delete text chunk from the topic
+    result = users_collection.update_one(
+        { "_id": user_id },
+        { "$pull": { f"topics.{topic}": text_chunk } }
+    )
+
+    if result.matched_count == 0:
+        return jsonify({"error": "User not found"}), 404
+
+    return jsonify({
+        "status": "success",
+        "message": f"Text chunk deleted from topic '{topic}' successfully."
+    })
+
 @app.route('/user/delete_topic', methods=['POST'])
 def delete_topic():
     data = request.json
@@ -183,6 +263,27 @@ def add_link():
         return jsonify({ "status": "duplicate", "message": "Link already exists under this topic." })
 
     link['date_added'] = datetime.utcnow().isoformat()
+
+    try:
+        response = pyrequests.get(link['url'], timeout=10)
+        if response.status_code != 200:
+            raise Exception(f"HTTP {response.status_code}")
+            
+        content_type = response.headers.get('Content-Type', '')
+        if 'text/html' in content_type:
+            # Extract text and generate summary
+            html_content = response.text
+            text_content = extract_text_from_html(html_content)
+            summary = generate_summary(text_content)
+        else:
+            # For non-HTML content, just store basic info
+            summary = "Content summary not available (non-HTML content)"
+            
+        link['summary'] = summary
+        
+    except Exception as e:
+        print(f"Error processing URL {link['url']}: {str(e)}")
+        link['summary'] = "Summary not available"
 
     result = users_collection.update_one(
         { "_id": user_id },
