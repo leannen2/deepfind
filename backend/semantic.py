@@ -261,16 +261,16 @@ def semantic_find_html(raw_text, orig_raw, query):
     # print(f"initial spelling fix terms: {spelling_fix_terms}")
     # print(f"initial related terms: {related_terms}")
     spelling_fix_terms = [elem for elem in spelling_fix_terms if ensure_phrase_appears_in_text(elem, clean_text)]
-    print(ensure_phrase_appears_in_text("assam", clean_text))
-    print(f"last 30 chars of clean text: {clean_text[-30:]}")
+    # print(ensure_phrase_appears_in_text("assam", clean_text))
+    # print(f"last 30 chars of clean text: {clean_text[-30:]}")
     related_terms = [elem for elem in related_terms if ensure_phrase_appears_in_text(elem, clean_text)]
 
     # check overlap between lists and within lists
     
     overlap = set(spelling_fix_terms) & set(related_terms)
     # print(f"overlap: {overlap} \n spelling_fix_terms: {spelling_fix_terms} \n related_terms: {related_terms}")
-    spelling_fix_terms = set(spelling_fix_terms)
-    related_terms = set(related_terms) - overlap
+    spelling_fix_terms = list(set(spelling_fix_terms))
+    related_terms = list(set(related_terms) - overlap)
     # print(f"spelling_fix_terms: {spelling_fix_terms} \n related_terms: {related_terms}")
 
     relevant_images = find_relevant_Images(orig_raw, related_terms)
