@@ -157,7 +157,13 @@ function Storage() {
                       </svg>
                     </button>
                   </div>
-                  
+                  {/* Summary section */}
+                  {link.summary && (
+                    <div className="mb-3 bg-blue-50 p-3 rounded-lg border-l-4 border-blue-400">
+                      <h3 className="text-sm font-medium text-blue-800 mb-1">Summary</h3>
+                      <p className="text-sm text-gray-700">{link.summary}</p>
+                    </div>
+                  )}
                   <div className="flex items-center text-sm text-gray-500 mb-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
