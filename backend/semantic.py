@@ -7,13 +7,17 @@ import os
 import re
 import base64
 from dotenv import load_dotenv
+from groq import Groq
 
 load_dotenv()
 
 # Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel("gemini-2.5-flash-preview-04-17")
+gemini_model = genai.GenerativeModel("gemini-2.5-flash-preview-04-17")
 # model = genai.GenerativeModel("gemini-2.5-pro-exp-03-25")
+
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+groq_model = "mistral-saba-24b"
 
 def upload_file(file_path):
     # Determine content type based on file extension
@@ -75,36 +79,120 @@ def extract_text_from_pdf(pdf_bytes):
 def preprocess_text(text):
     """Clean and truncate text for Gemini"""
     text = re.sub(r'\s+', ' ', text).strip()
-    return text[:10000]  # Truncate to fit token limits
+    return text[:80000]  # Truncate to fit token limits
 
+# def generate_fixed_spelling(text, query):
+#     """Generate fixed spelling using Gemini"""
+#     prompt = f"""
+#     Given this content: {text}
+#     Check if the query has been misspelled and ONLY return the corrected spelling.
+#     If there are several possible corrections (like "color" vs "colour" or "twenty one" vs "21" vs "twenty-one"), return all possible corrections.
+#     Also return capitalization variations (like "Los Angeles" vs "los angeles" or "Los Angeles" vs "LOS ANGELES").
+#     Generate this for the query: "{query}". Return ONLY carrot (^) separated terms.
+#     """
+#     response = gemini_model.generate_content(prompt)
+#     if response is None:
+#         return []
+#     return [term.strip() for term in response.text.split('^') if term.strip()]
 def generate_fixed_spelling(text, query):
-    """Generate fixed spelling using Gemini"""
+    """Generate fixed spelling using Groq"""
+    #     Also return all capitalization variations (like "Los Angeles" vs "los angeles" or "Los Angeles" vs "LOS ANGELES").
     prompt = f"""
     Given this content: {text}
     Check if the query has been misspelled and ONLY return the corrected spelling.
     If there are several possible corrections (like "color" vs "colour" or "twenty one" vs "21" vs "twenty-one"), return all possible corrections.
-    Also return capitalization variations (like "Los Angeles" vs "los angeles" or "Los Angeles" vs "LOS ANGELES").
-    Generate this for the query: "{query}". Return ONLY carrot (^) separated terms.
+    Return maximum 5 terms and ensure that each term appears in the context text.
+    Generate this for the query: "{query}". Return list of terms separated by a caret (^) like so: "^term1^term2^term3^".
     """
-    response = model.generate_content(prompt)
-    if response is None:
+    
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }],
+            model=groq_model,  # Fastest model
+            temperature=0.1,
+            max_tokens=1000
+        )
+        
+        response = chat_completion.choices[0].message.content
+        # print(f"response in spelling: {response}")
+        # return [term.strip() for term in response.split('^') if term.strip()]
+        return process_response(response)
+    
+    except Exception as e:
+        print(f"Groq API Error: {str(e)}")
         return []
-    return [term.strip() for term in response.text.split('^') if term.strip()]
+    
+# def generate_similar_terms(text, query):
+#     """Generate search terms using Gemini"""
+#     prompt = f"""
+#     Given this content: {text} and this query: {query}
+#     Generate 5-10 search terms that are directly relevant to the query (synonyms and very related concepts), based on the context of the text.
+#     Make sure the search terms exactly exist in the context text.
+#     Do not include any terms that are not directly relevant to the query.
+#     Do not include spelling variations or corrections.
+#     Return ONLY carrot (^) separated terms.
+#     """
+#     response = gemini_model.generate_content(prompt)
+#     if response is None:
+#         return []
+#     return [term.strip() for term in response.text.split('^') if term.strip()]
 
-def generate_similar_terms(text, query):
-    """Generate search terms using Gemini"""
+def generate_similar_terms(text, query, spelling_fix_terms):
+    """Generate search terms using Groq"""
     prompt = f"""
-    Given this content: {text} and this query: {query}
-    Generate 5-10 search terms that are directly relevant to the query (synonyms and very related concepts), based on the context of the text.
+    Given this content: {text} and this query: {query}. The query may be misspelled, it may be: {spelling_fix_terms}.
+    If there are any phrases or terms that are synonyms or very related concepts to the query, return them.
     Make sure the search terms exactly exist in the context text.
+    If there are no terms that are synonyms or very related concepts to the query, do not return anything. 
+    If the query is not relevant to the text, do not return anything.
     Do not include any terms that are not directly relevant to the query.
-    Do not include spelling variations or corrections.
-    Return ONLY carrot (^) separated terms.
+    Do not include any explanation.
+    Return only a maximum of 10 such terms.
+    Return ONLY caret (^) separated terms like this: "^term1^term2^term3^".
     """
-    response = model.generate_content(prompt)
-    if response is None:
+
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }],
+            model=groq_model,
+            temperature=0.1,
+            max_tokens=1000
+        )
+        
+        response = chat_completion.choices[0].message.content
+        # print(f"response in similar terms: {response}")
+        # return [term.strip() for term in response.split('^') if term.strip()]
+        return process_response(response)
+    
+    except Exception as e:
+        print(f"Groq API Error: {str(e)}")
         return []
-    return [term.strip() for term in response.text.split('^') if term.strip()]
+    
+def process_response(response):
+    # Split by '^' and process all cases
+    print(f"********* response: {response}")
+    split_response = response.split('^')
+    
+    # Get all non-empty terms after first caret
+    terms = [
+        term.strip() for term in split_response[1:]  if term.strip() and len(term.strip()) < 50
+    ]
+    # print(f"* gemini_response: * {response} \n terms: {terms}")
+    return terms
+
+def ensure_phrase_appears_in_text(phrase, text):
+    """Check if a phrase appears in the text"""
+    # Normalize both text and phrase to lowercase for case-insensitive comparison
+    lower_text = text.lower()
+    lower_phrase = phrase.lower()
+    # Check if the phrase is in the text
+    return lower_phrase in lower_text
 
 def semantic_find(file_path, query): 
     # Extract text
@@ -119,7 +207,7 @@ def semantic_find(file_path, query):
     # print(f"nCleaned text (truncated):\n{clean_text[:500]}...")
     # print(f"length of preprocessed text {len(clean_text)}")  # Show only the first 500 characters
     spelling_fix_terms = generate_fixed_spelling(clean_text, query)
-    related_terms = generate_similar_terms(clean_text, query)
+    related_terms = generate_similar_terms(clean_text, query, spelling_fix_terms)
 
     return related_terms
 
@@ -132,8 +220,8 @@ def find_relevant_Images(raw_text, related_terms):
         alt_text = img.get('alt', '').lower()
         title_text = img.get('title', '').lower()
         src = img.get('src', '').lower()
-        orig_src = img.get('src', '')
-        
+        # orig_src = img.get('src', '')
+
     # Check nearby text (e.g., parent or sibling tags)
         surrounding_text = ''
         parent = img.find_parent()
@@ -146,7 +234,8 @@ def find_relevant_Images(raw_text, related_terms):
         for term in related_terms:
             if term.lower() in combined_text:
                 relevant_images.append({
-                    'src': orig_src,
+
+                    'src': src,
                     'alt': alt_text,
                     'title': title_text,
                     'matched_term': term
@@ -168,7 +257,21 @@ def semantic_find_html(raw_text, orig_raw, query):
     # print(f"nCleaned text (truncated):\n{clean_text[:500]}...")
     # print(f"length of preprocessed text {len(clean_text)}")  # Show only the first 500 characters
     spelling_fix_terms = generate_fixed_spelling(clean_text, query)
-    related_terms = generate_similar_terms(clean_text, query)
+    related_terms = generate_similar_terms(clean_text, query, spelling_fix_terms)
+    # print(f"initial spelling fix terms: {spelling_fix_terms}")
+    # print(f"initial related terms: {related_terms}")
+    spelling_fix_terms = [elem for elem in spelling_fix_terms if ensure_phrase_appears_in_text(elem, clean_text)]
+    # print(ensure_phrase_appears_in_text("assam", clean_text))
+    # print(f"last 30 chars of clean text: {clean_text[-30:]}")
+    related_terms = [elem for elem in related_terms if ensure_phrase_appears_in_text(elem, clean_text)]
+
+    # check overlap between lists and within lists
+    
+    overlap = set(spelling_fix_terms) & set(related_terms)
+    # print(f"overlap: {overlap} \n spelling_fix_terms: {spelling_fix_terms} \n related_terms: {related_terms}")
+    spelling_fix_terms = list(set(spelling_fix_terms))
+    related_terms = list(set(related_terms) - overlap)
+    # print(f"spelling_fix_terms: {spelling_fix_terms} \n related_terms: {related_terms}")
 
     relevant_images = find_relevant_Images(orig_raw, related_terms)
 
@@ -182,6 +285,14 @@ def semantic_find_html(raw_text, orig_raw, query):
 
 if __name__ == "__main__":
     print("\nGenerating")
+
+    file_path = "splitgeek.html"
+    related_terms = semantic_find(file_path, "int")
+    raw_text = upload_file(file_path)
+    with open(file_path, 'r', encoding='utf-8') as f:
+        html_content_orig = f.read()
+    query = "int"
+    # images = find_relevant_Images(html_content_orig, related_terms)
     related_terms = semantic_find("ww2.html", "axis powers")
     raw_text = upload_file("ww2.html")
     with open('ww2.html', 'r', encoding='utf-8') as f:
