@@ -7,6 +7,7 @@ export default function Home() {
   const [topic, setTopic] = useState("Select topic");
   const [includeImages, setIncludeImages] = useState(false);
   const [includeVideos, setIncludeVideos] = useState(false);
+  var userId = null;
 
   const [topics, setTopics] = useState([]);
 
@@ -19,7 +20,7 @@ export default function Home() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            userId: "113371480472231890521",
+            userId: userId,
           }),
         });
 
@@ -35,7 +36,33 @@ export default function Home() {
       }
     };
 
-    fetchTopics();
+    const getUserId = async () => {
+      try {
+        chrome.identity.getAuthToken({ interactive: true }, async (token) => {
+          if (chrome.runtime.lastError || !token) {
+            console.error("Token error:", chrome.runtime.lastError);
+            return;
+          }
+
+          const userInfoRes = await fetch(
+            "https://www.googleapis.com/oauth2/v1/userinfo",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          const userInfo = await userInfoRes.json();
+          userId = userInfo.id;
+          fetchTopics();
+          console.log("userId: ", userId);
+        });
+      } catch (error) {
+        console.error("Error fetching groups:", error);
+      }
+    };
+
+    getUserId();
+    // fetchTopics();
   }, []);
 
   const handleKeyDown = (e) => {
@@ -79,33 +106,54 @@ export default function Home() {
   };
 
   const handleBookmark = async () => {
-    const currentTabUrl = await getCurrentTabUrl();
-    console.log("Current tab URL:", currentTabUrl);
-
     try {
-      const response = await fetch("http://127.0.0.1:5001/user/add_link", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: "113371480472231890521",
-          topic: topic,
-          link: {
-            title: currentTabUrl,
-            url: currentTabUrl,
-          },
-        }),
+      chrome.identity.getAuthToken({ interactive: true }, async (token) => {
+        if (chrome.runtime.lastError || !token) {
+          console.error("Token error:", chrome.runtime.lastError);
+          return;
+        }
+
+        try {
+          const userInfoRes = await fetch(
+            "https://www.googleapis.com/oauth2/v1/userinfo",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          const userInfo = await userInfoRes.json();
+          const userId = userInfo.id;
+          if (!userId) return;
+
+          const currentTabUrl = await getCurrentTabUrl();
+
+          const response = await fetch("http://127.0.0.1:5001/user/add_link", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userId,
+              topic,
+              link: {
+                title: currentTabUrl,
+                url: currentTabUrl,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to add link");
+          }
+
+          const data = await response.json();
+          console.log("add link data: ", data);
+        } catch (error) {
+          console.error("Error in async callback:", error);
+        }
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to add link");
-      }
-
-      const data = await response.json();
-      console.log("add link data: ", data);
     } catch (error) {
-      console.error("Error adding link:", error);
+      console.error("Error calling getAuthToken:", error);
     }
   };
 
