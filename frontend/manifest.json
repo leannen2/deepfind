@@ -7,7 +7,14 @@
     "default_popup": "index.html",
     "default_title": "Ctrl++"
   },
-  "permissions": ["webNavigation", "activeTab", "scripting", "tabs"],
+
+  "permissions": ["webNavigation", "activeTab", "scripting","identity",  "tabs"],
+  
+  "oauth2": {
+    "client_id": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+    "scopes": ["email", "profile"]
+  },
+
   "web_accessible_resources": [
     {
       "resources": ["storage.html"],
