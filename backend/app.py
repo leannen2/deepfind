@@ -76,23 +76,35 @@ def get_topics():
         "status": "success",
         "topics": topics
     })
+    
 @app.route('/user/get_links', methods=['POST'])
 def get_links():
-    data = request.json
-    user_id = data.get('userId')
-    topic = data.get('topic')
-    if not user_id or not topic:
-        return jsonify({"error": "Missing userId or topic"}), 400
-    user = users_collection.find_one({ "_id": user_id })
-    if not user:
-        return jsonify({"error": "User not found"}), 404
-    links = user.get("topics", {}).get(topic, [])
-    if not links:
-        return jsonify({"error": "No links found for this topic"}), 404
-    return jsonify({
-        "status": "success",
-        "links": links
-    })
+    try:
+        data = request.get_json(force=True)
+        user_id = data.get('userId')
+        topic = data.get('topic')
+
+        if not user_id or not topic:
+            return jsonify({"error": "Missing userId or topic"}), 400
+
+        user = users_collection.find_one({ "_id": user_id })
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        # Ensure topic exists and is a list
+        topics = user.get("topics", {})
+        links = topics.get(topic)
+        if not links or not isinstance(links, list):
+            return jsonify({"error": "No links found for this topic"}), 404
+
+        return jsonify({
+            "status": "success",
+            "links": links
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/user/add_topic', methods=['POST'])
 def add_topic():
     data = request.json
