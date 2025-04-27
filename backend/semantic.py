@@ -178,6 +178,23 @@ def semantic_find_html(raw_text, orig_raw, query):
         "relevant_images": relevant_images
     }
 
+def generate_summary(text):
+    """Generate a concise summary of the content using Gemini"""
+    try:
+        prompt = f"""
+        Please provide a concise 2-3 sentence summary of the following content.
+        Focus on the main points and key information.
+        If this is a webpage, imagine you're summarizing it for someone who hasn't read it.
+        
+        Content: {text[:15000]}  # Truncate to stay within token limits
+        """
+        
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        print(f"Error generating summary: {str(e)}")
+        return "Summary not available"
+
 ### DEBUG 
 
 if __name__ == "__main__":

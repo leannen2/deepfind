@@ -184,6 +184,27 @@ def add_link():
 
     link['date_added'] = datetime.utcnow().isoformat()
 
+    try:
+        response = pyrequests.get(link['url'], timeout=10)
+        if response.status_code != 200:
+            raise Exception(f"HTTP {response.status_code}")
+            
+        content_type = response.headers.get('Content-Type', '')
+        if 'text/html' in content_type:
+            # Extract text and generate summary
+            html_content = response.text
+            text_content = extract_text_from_html(html_content)
+            summary = generate_summary(text_content)
+        else:
+            # For non-HTML content, just store basic info
+            summary = "Content summary not available (non-HTML content)"
+            
+        link['summary'] = summary
+        
+    except Exception as e:
+        print(f"Error processing URL {link['url']}: {str(e)}")
+        link['summary'] = "Summary not available"
+
     result = users_collection.update_one(
         { "_id": user_id },
         { "$push": { f"topics.{topic}": link } }
