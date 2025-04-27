@@ -283,22 +283,30 @@ def semantic_find_html(raw_text, orig_raw, query):
 
 def generate_summary(text):
     """Generate a concise summary of the content using Gemini"""
+    prompt = f"""
+    Please provide a concise 2-3 sentence summary of the following content.
+    Focus on the main points and key information.
+    If this is a webpage, imagine you're summarizing it for someone who hasn't read it.
+    
+    Content: {text}  
+    """
     try:
-        prompt = f"""
-        Please provide a concise 2-3 sentence summary of the following content.
-        Focus on the main points and key information.
-        If this is a webpage, imagine you're summarizing it for someone who hasn't read it.
+        chat_completion = client.chat.completions.create(
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }],
+            model=groq_model,
+            temperature=0.1,
+            max_tokens=2500
+        )
         
-        Content: {text[:15000]}  # Truncate to stay within token limits
-        """
-        
-        response = model.generate_content(prompt)
-        return response.text.strip()
+        response = chat_completion.choices[0].message.content
+        print(f"response in summary: {response}")
+        return response
     except Exception as e:
         print(f"Error generating summary: {str(e)}")
         return "Summary not available"
-
-### DEBUG 
 
 if __name__ == "__main__":
     print("\nGenerating")
@@ -306,6 +314,7 @@ if __name__ == "__main__":
     file_path = "splitgeek.html"
     related_terms = semantic_find(file_path, "int")
     raw_text = upload_file(file_path)
+    summary = generate_summary(raw_text)
     with open(file_path, 'r', encoding='utf-8') as f:
         html_content_orig = f.read()
     query = "int"
