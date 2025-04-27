@@ -179,7 +179,7 @@ function Storage() {
                       <h3 className="font-medium text-gray-700 mb-2">Text Chunks</h3>
                       <ul className="space-y-2">
                         {/* If link.chunks exists, map through them, otherwise show placeholder */}
-                        {(link.chunks || ['No text chunks available']).map((chunk, chunkIndex) => (
+                        {(link.textChunks || ['No text chunks available']).map((chunk, chunkIndex) => (
                           <li key={chunkIndex} className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700">
                             {chunk}
                           </li>
