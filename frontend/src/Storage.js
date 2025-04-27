@@ -4,6 +4,7 @@ function Storage() {
   const [links, setLinks] = useState([]);
   const [activeGroup, setActiveGroup] = useState("default");
   const [groups, setGroups] = useState([]);
+  const [expandedLinks, setExpandedLinks] = useState({});
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -41,6 +42,7 @@ function Storage() {
 
   const onClickGroup = async (group) => {
     setActiveGroup(group);
+    setExpandedLinks({}); // Reset expanded state when changing groups
 
     try {
       chrome.identity.getAuthToken({ interactive: true }, async (token) => {
@@ -69,6 +71,13 @@ function Storage() {
     } catch (error) {
       console.error("Error fetching links:", error);
     }
+  };
+
+  const toggleExpand = (index) => {
+    setExpandedLinks(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
   };
 
   return (
@@ -122,15 +131,34 @@ function Storage() {
                   key={index}
                   className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-5"
                 >
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block text-xl font-semibold text-blue-600 hover:text-blue-700 hover:underline mb-2"
-                  >
-                    {link.title}
-                  </a>
-                  <div className="flex items-center text-sm text-gray-500">
+                  <div className="flex justify-between items-start mb-2">
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xl font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+                    >
+                      {link.title}
+                    </a>
+                    <button 
+                      onClick={() => toggleExpand(index)}
+                      className="text-gray-500 hover:text-gray-700 focus:outline-none p-1 rounded-full hover:bg-gray-100"
+                      aria-expanded={expandedLinks[index]}
+                      aria-label={expandedLinks[index] ? "Collapse text chunks" : "Expand text chunks"}
+                    >
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className={`h-5 w-5 transition-transform duration-200 ${expandedLinks[index] ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center text-sm text-gray-500 mb-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
@@ -139,6 +167,25 @@ function Storage() {
                       month: "short",
                       day: "numeric",
                     })}
+                  </div>
+                  
+                  {/* Collapsible text chunks section */}
+                  <div 
+                    className={`overflow-hidden transition-all duration-300 ${
+                      expandedLinks[index] ? 'max-h-96 opacity-100 mt-3' : 'max-h-0 opacity-0'
+                    }`}
+                  >
+                    <div className="border-t pt-3">
+                      <h3 className="font-medium text-gray-700 mb-2">Text Chunks</h3>
+                      <ul className="space-y-2">
+                        {/* If link.chunks exists, map through them, otherwise show placeholder */}
+                        {(link.chunks || ['No text chunks available']).map((chunk, chunkIndex) => (
+                          <li key={chunkIndex} className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700">
+                            {chunk}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
                 </div>
               ))}
