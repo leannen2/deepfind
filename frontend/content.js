@@ -13,11 +13,11 @@ var currentIndex = 0;
 
 function jumpTo() {
   if (results.length > 0) {
-    results.forEach((el) => (el.style.backgroundColor = "yellow"));
+    results.forEach((el) => (el.style.backgroundColor = "#E6E6FA"));
 
     const current = results[currentIndex];
     if (current) {
-      current.style.backgroundColor = "orange";
+      current.style.backgroundColor = "#D8BFD8";
       const position =
         current.getBoundingClientRect().top + window.scrollY - offsetTop;
       window.scrollTo({ top: position, behavior: "smooth" });
@@ -54,8 +54,8 @@ function markImages(imageSources) {
     var imgSrc = img.getAttribute("src");
     if (imageSources.includes(imgSrc)) {
       markedImageElements.push(img);
-      img.style.border = "3px solid red";
-      img.style.boxShadow = "0 0 10px 5px yellow";
+      img.style.border = "3px solid #B57EDC";
+      img.style.boxShadow = "0 0 10px 5px #E6E6FA";
       img.style.borderRadius = "5px";
     } else {
       img.style.border = "";
