@@ -132,6 +132,7 @@ def find_relevant_Images(raw_text, related_terms):
         alt_text = img.get('alt', '').lower()
         title_text = img.get('title', '').lower()
         src = img.get('src', '').lower()
+        orig_src = img.get('src', '')
         
     # Check nearby text (e.g., parent or sibling tags)
         surrounding_text = ''
@@ -145,7 +146,7 @@ def find_relevant_Images(raw_text, related_terms):
         for term in related_terms:
             if term.lower() in combined_text:
                 relevant_images.append({
-                    'src': src,
+                    'src': orig_src,
                     'alt': alt_text,
                     'title': title_text,
                     'matched_term': term
