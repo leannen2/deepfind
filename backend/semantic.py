@@ -19,6 +19,8 @@ gemini_model = genai.GenerativeModel("gemini-2.5-flash-preview-04-17")
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 groq_model = "mistral-saba-24b"
 
+groq_summary = "gemma2-9b-it"
+
 def upload_file(file_path):
     # Determine content type based on file extension
     _, ext = os.path.splitext(file_path)
@@ -288,7 +290,7 @@ def generate_summary(text):
     Focus on the main points and key information.
     If this is a webpage, imagine you're summarizing it for someone who hasn't read it.
     
-    Content: {text}  
+    Content: {text[:5000]}
     """
     try:
         chat_completion = client.chat.completions.create(
@@ -296,7 +298,7 @@ def generate_summary(text):
                 "role": "user",
                 "content": prompt
             }],
-            model=groq_model,
+            model=groq_summary,
             temperature=0.1,
             max_tokens=2500
         )
@@ -311,41 +313,41 @@ def generate_summary(text):
 if __name__ == "__main__":
     print("\nGenerating")
 
-    file_path = "splitgeek.html"
-    related_terms = semantic_find(file_path, "int")
+    file_path = "ww2.html"
+    # related_terms = semantic_find(file_path, "int")
     raw_text = upload_file(file_path)
     summary = generate_summary(raw_text)
-    with open(file_path, 'r', encoding='utf-8') as f:
-        html_content_orig = f.read()
-    query = "int"
+    # with open(file_path, 'r', encoding='utf-8') as f:
+    #     html_content_orig = f.read()
+    # query = "int"
+    # # images = find_relevant_Images(html_content_orig, related_terms)
+    # related_terms = semantic_find("ww2.html", "axis powers")
+    # raw_text = upload_file("ww2.html")
+    # with open('ww2.html', 'r', encoding='utf-8') as f:
+    #     html_content_orig = f.read()
+    # query = "axis powers"
     # images = find_relevant_Images(html_content_orig, related_terms)
-    related_terms = semantic_find("ww2.html", "axis powers")
-    raw_text = upload_file("ww2.html")
-    with open('ww2.html', 'r', encoding='utf-8') as f:
-        html_content_orig = f.read()
-    query = "axis powers"
-    images = find_relevant_Images(html_content_orig, related_terms)
-    results = semantic_find_html(raw_text, html_content_orig, query)
+    # results = semantic_find_html(raw_text, html_content_orig, query)
     
-    # if spelling_fix_terms:
-    #     for i, term in enumerate(spelling_fix_terms, 1):
-    #         print(f"{i}. {term}")
-    # print("\nGenerated similar terms:")
-    # for i, term in enumerate(related_terms, 1):
-    #     print(f"{i}. {term}")
-    if results:
-        print("\n=== Related Terms ===")
-        for term in results["related_terms"]:
-            print(f"- {term}")
+    # # if spelling_fix_terms:
+    # #     for i, term in enumerate(spelling_fix_terms, 1):
+    # #         print(f"{i}. {term}")
+    # # print("\nGenerated similar terms:")
+    # # for i, term in enumerate(related_terms, 1):
+    # #     print(f"{i}. {term}")
+    # if results:
+    #     print("\n=== Related Terms ===")
+    #     for term in results["related_terms"]:
+    #         print(f"- {term}")
 
-        print("\n=== Spelling Fix Terms ===")
-        for term in results["spelling_fix_terms"]:
-            print(f"- {term}")
+    #     print("\n=== Spelling Fix Terms ===")
+    #     for term in results["spelling_fix_terms"]:
+    #         print(f"- {term}")
 
-        print("\n=== Relevant Images ===")
-        for img_info in results["relevant_images"]:
-            print(f"Matched Term: {img_info['matched_term']}")
-            print(f"Src: {img_info['src']}")
-            print(f"Alt: {img_info['alt']}")
-            print(f"Title: {img_info['title']}")
-            print("-" * 40)
+    #     print("\n=== Relevant Images ===")
+    #     for img_info in results["relevant_images"]:
+    #         print(f"Matched Term: {img_info['matched_term']}")
+    #         print(f"Src: {img_info['src']}")
+    #         print(f"Alt: {img_info['alt']}")
+    #         print(f"Title: {img_info['title']}")
+    #         print("-" * 40)
