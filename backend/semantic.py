@@ -220,8 +220,8 @@ def find_relevant_Images(raw_text, related_terms):
         alt_text = img.get('alt', '').lower()
         title_text = img.get('title', '').lower()
         src = img.get('src', '').lower()
-        orig_src = img.get('src', '')
-        
+        # orig_src = img.get('src', '')
+
     # Check nearby text (e.g., parent or sibling tags)
         surrounding_text = ''
         parent = img.find_parent()
@@ -234,7 +234,8 @@ def find_relevant_Images(raw_text, related_terms):
         for term in related_terms:
             if term.lower() in combined_text:
                 relevant_images.append({
-                    'src': orig_src,
+
+                    'src': src,
                     'alt': alt_text,
                     'title': title_text,
                     'matched_term': term
@@ -271,6 +272,7 @@ def semantic_find_html(raw_text, orig_raw, query):
     spelling_fix_terms = set(spelling_fix_terms)
     related_terms = set(related_terms) - overlap
     # print(f"spelling_fix_terms: {spelling_fix_terms} \n related_terms: {related_terms}")
+
     relevant_images = find_relevant_Images(orig_raw, related_terms)
 
     return {
@@ -283,6 +285,7 @@ def semantic_find_html(raw_text, orig_raw, query):
 
 if __name__ == "__main__":
     print("\nGenerating")
+
     file_path = "splitgeek.html"
     related_terms = semantic_find(file_path, "int")
     raw_text = upload_file(file_path)
@@ -290,6 +293,12 @@ if __name__ == "__main__":
         html_content_orig = f.read()
     query = "int"
     # images = find_relevant_Images(html_content_orig, related_terms)
+    related_terms = semantic_find("ww2.html", "axis powers")
+    raw_text = upload_file("ww2.html")
+    with open('ww2.html', 'r', encoding='utf-8') as f:
+        html_content_orig = f.read()
+    query = "axis powers"
+    images = find_relevant_Images(html_content_orig, related_terms)
     results = semantic_find_html(raw_text, html_content_orig, query)
     
     # if spelling_fix_terms:

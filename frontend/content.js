@@ -29,6 +29,7 @@ function markTerm(term) {
   return new Promise((resolve) => {
     instance.mark(term, {
       separateWordSearch: false,
+      separateWordSearch: false,
       done: resolve,
     });
   });
@@ -39,6 +40,7 @@ function markAllTerms(terms) {
     done: () => {
       Promise.all(terms.map((term) => markTerm(term))).then(() => {
         results = Array.from(document.body.querySelectorAll("mark"));
+        // console.log(results);
         // console.log(results);
         currentIndex = 0;
         jumpTo();
@@ -124,10 +126,12 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     return true;
   } else if (message.action === "jumpForward") {
     currentIndex = (currentIndex + 1) % results.length;
+    currentIndex = (currentIndex + 1) % results.length;
     jumpTo();
     sendResponse({ status: "ok" });
     return true;
   } else if (message.action === "jumpBackward") {
+    currentIndex = (currentIndex - 1 + results.length) % results.length;
     currentIndex = (currentIndex - 1 + results.length) % results.length;
     jumpTo();
     sendResponse({ status: "ok" });

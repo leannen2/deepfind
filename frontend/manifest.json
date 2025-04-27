@@ -2,11 +2,19 @@
   "version": "1.0.0",
   "manifest_version": 3,
   "name": "Ctrl++",
+  "name": "Ctrl++",
   "description": "This is a Chrome extension built with React & Tailwind By ...",
   "action": {
     "default_popup": "index.html",
     "default_title": "Ctrl++"
   },
+  "permissions": ["webNavigation", "activeTab", "scripting", "tabs"],
+  "web_accessible_resources": [
+    {
+      "resources": ["storage.html"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "permissions": ["webNavigation", "activeTab", "scripting", "tabs"],
   "web_accessible_resources": [
     {
