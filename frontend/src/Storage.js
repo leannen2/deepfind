@@ -1,15 +1,66 @@
 import React, { useState, useEffect } from "react";
 
 function Storage() {
+  const [links, setLinks] = useState([]);
   const [activeGroup, setActiveGroup] = useState("default");
-  const groups = ["backend", "api", "frontend"];
+  const [groups, setGroups] = useState([]);
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        // Step 1: Get OAuth token
+        chrome.identity.getAuthToken({ interactive: true }, async (token) => {
+          if (chrome.runtime.lastError || !token) {
+            console.error("Token error:", chrome.runtime.lastError);
+            return;
+          }
+
+          // Step 2: Get Google user info
+          const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v1/userinfo", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const userInfo = await userInfoRes.json();
+          const userId = userInfo.id;
+          console.log("User ID:", userId);
+          if (!userId) {
+            console.error("User ID not found");
+            return;
+          }
+          // Step 3: Fetch groups with userId in POST body
+          const response = await fetch("http://127.0.0.1:5001/user/get_topics", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ userId }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch groups");
+          }
+          
+          const data = await response.json();
+          console.log("groups", data);
+          setGroups(data.topics); // assuming data is an array of group names
+        });
+      } catch (error) {
+        console.error("Error fetching groups:", error);
+      }
+    };
+
+    fetchGroups();
+  }, []);
 
   const onClickGroup = (group) => {
     setActiveGroup(group);
   };
+
   return (
     <div className="flex">
-      {/* Sidebar */}
+      {/* Sidebar */}}
       <div
         className={`fixed top-0 left-0 h-full w-64 bg-gray-800 text-white transform transition-transform duration-300 z-50 ${
           open ? "translate-x-0" : "-translate-x-full"

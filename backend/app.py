@@ -62,6 +62,92 @@ def google_auth():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/user/get_topics', methods=['POST'])
+def get_topics():
+    data = request.json
+    user_id = data.get('userId')
+    if not user_id:
+        return jsonify({"error": "Missing userId"}), 400
+    user = users_collection.find_one({ "_id": user_id })
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    topics = list(user.get("topics", {}).keys())
+    return jsonify({
+        "status": "success",
+        "topics": topics
+    })
+@app.route('/user/get_links', methods=['POST'])
+def get_links():
+    data = request.json
+    user_id = data.get('userId')
+    topic = data.get('topic')
+    if not user_id or not topic:
+        return jsonify({"error": "Missing userId or topic"}), 400
+    user = users_collection.find_one({ "_id": user_id })
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    links = user.get("topics", {}).get(topic, [])
+    if not links:
+        return jsonify({"error": "No links found for this topic"}), 404
+    return jsonify({
+        "status": "success",
+        "links": links
+    })
+@app.route('/user/add_topic', methods=['POST'])
+def add_topic():
+    data = request.json
+    user_id = data.get('userId')
+    topic = data.get('topic')
+    if not user_id or not topic:
+        return jsonify({"error": "Missing userId or topic"}), 400
+    # Check if user exists
+    user = users_collection.find_one({ "_id": user_id })
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    # Check if topic already exists
+    if topic in user.get("topics", {}):
+        return jsonify({"error": "Topic already exists"}), 400
+    # Add topic to user
+    result = users_collection.update_one(
+        { "_id": user_id },
+        { "$set": { f"topics.{topic}": [] } }
+    )
+    if result.matched_count == 0:
+        return jsonify({"error": "User not found"}), 404
+    if result.modified_count == 0:
+        return jsonify({"error": "Topic already exists"}), 400
+    return jsonify({
+        "status": "success",
+        "message": f"Topic '{topic}' added successfully."
+    })
+@app.route('/user/delete_topic', methods=['POST'])
+def delete_topic():
+    data = request.json
+    user_id = data.get('userId')
+    topic = data.get('topic')
+    if not user_id or not topic:
+        return jsonify({"error": "Missing userId or topic"}), 400
+    # Check if user exists
+    user = users_collection.find_one({ "_id": user_id })
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    # Check if topic exists
+    if topic not in user.get("topics", {}):
+        return jsonify({"error": "Topic does not exist"}), 400
+    # Delete topic from user
+    result = users_collection.update_one(
+        { "_id": user_id },
+        { "$unset": { f"topics.{topic}": "" } }
+    )
+    if result.matched_count == 0:
+        return jsonify({"error": "User not found"}), 404
+    if result.modified_count == 0:
+        return jsonify({"error": "Topic does not exist"}), 400
+    return jsonify({
+        "status": "success",
+        "message": f"Topic '{topic}' deleted successfully."
+    })
+
 @app.route('/user/add_link', methods=['POST'])
 def add_link():
     data = request.json
