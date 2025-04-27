@@ -249,10 +249,12 @@ def find():
         result = semantic_find_html(text, content, query)
         related_terms = result["related_terms"]
         spelling_fix_terms = result["spelling_fix_terms"]
+        search_terms = spelling_fix_terms + related_terms
         relevant_images = result["relevant_images"]
 
         return jsonify({
             'message': 'Search terms generated successfully',
+            'search_terms': search_terms,
             'similar_terms': related_terms,
             'spelling_fix_terms': spelling_fix_terms,
             'relevant_images': relevant_images,

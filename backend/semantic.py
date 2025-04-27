@@ -211,7 +211,7 @@ def semantic_find(file_path, query):
 
     return related_terms
 
-def find_relevant_Images(raw_text, related_terms):
+def find_relevant_Images(raw_text, search_terms):
     soup = BeautifulSoup(raw_text, 'html.parser')
     images = soup.find_all('img')
     relevant_images = []
@@ -220,7 +220,7 @@ def find_relevant_Images(raw_text, related_terms):
         alt_text = img.get('alt', '').lower()
         title_text = img.get('title', '').lower()
         src = img.get('src', '').lower()
-        # orig_src = img.get('src', '')
+        orig_src = img.get('src', '')
 
     # Check nearby text (e.g., parent or sibling tags)
         surrounding_text = ''
@@ -231,11 +231,11 @@ def find_relevant_Images(raw_text, related_terms):
         # Combine everything to one string to match against
         combined_text = f"{alt_text} {title_text} {src} {surrounding_text}"
 
-        for term in related_terms:
+        for term in search_terms:
             if term.lower() in combined_text:
                 relevant_images.append({
 
-                    'src': src,
+                    'src': orig_src,
                     'alt': alt_text,
                     'title': title_text,
                     'matched_term': term
@@ -273,7 +273,7 @@ def semantic_find_html(raw_text, orig_raw, query):
     related_terms = list(set(related_terms) - overlap)
     # print(f"spelling_fix_terms: {spelling_fix_terms} \n related_terms: {related_terms}")
 
-    relevant_images = find_relevant_Images(orig_raw, related_terms)
+    relevant_images = find_relevant_Images(orig_raw, spelling_fix_terms + related_terms)
 
     return {
         "related_terms": related_terms,
